@@ -12,19 +12,20 @@ return {
     -- Formatters & linters for mason to install
     require('mason-null-ls').setup {
       ensure_installed = {
-        'prettier', -- ts/js formatter
-        'stylua', -- lua formatter
-        'eslint_d', -- ts/js linter
-        'shfmt', -- Shell formatter
-        'checkmake', -- linter for Makefiles
-        'ruff', -- Python linter and formatter
+        'prettier',    -- TS/JS/HTML/CSS/JSON formatter
+        'stylua',      -- Lua formatter
+        'eslint_d',    -- TS/JS linter
+        'shfmt',       -- Shell formatter
+        'checkmake',   -- Linter for Makefiles
+        'ruff',        -- Python linter and formatter
+        'terraform_fmt', -- Terraform formatter
       },
       automatic_installation = true,
     }
 
     local sources = {
       diagnostics.checkmake,
-      formatting.prettier.with { filetypes = { 'html', 'json', 'yaml', 'markdown' } },
+      formatting.prettier.with { filetypes = { 'html', 'json', 'yaml', 'markdown', 'css', 'javascript', 'typescript', 'typescriptreact' } },
       formatting.stylua,
       formatting.shfmt.with { args = { '-i', '4' } },
       formatting.terraform_fmt,
@@ -33,11 +34,11 @@ return {
     }
 
     local augroup = vim.api.nvim_create_augroup('LspFormatting', {})
+
     null_ls.setup {
-      -- debug = true, -- Enable debug mode. Inspect logs with :NullLsLog.
       sources = sources,
-      -- you can reuse a shared lspconfig on_attach callback here
       on_attach = function(client, bufnr)
+        -- Auto-format on save
         if client.supports_method 'textDocument/formatting' then
           vim.api.nvim_clear_autocmds { group = augroup, buffer = bufnr }
           vim.api.nvim_create_autocmd('BufWritePre', {
@@ -45,6 +46,17 @@ return {
             buffer = bufnr,
             callback = function()
               vim.lsp.buf.format { async = false }
+            end,
+          })
+        end
+
+        -- Auto-format on type (Insert mode)
+        if client.supports_method 'textDocument/formatting' then
+          vim.api.nvim_create_autocmd('TextChangedI', {
+            group = augroup,
+            buffer = bufnr,
+            callback = function()
+              vim.lsp.buf.format { async = true }
             end,
           })
         end
